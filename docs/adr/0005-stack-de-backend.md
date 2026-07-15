@@ -44,3 +44,11 @@ A escolha da fila via Postgres é deliberadamente a opção mais simples: evita 
 
 ## # REVISAR:
 Nenhum ponto em aberto no momento desta decisão. Se o volume de imagens/requisições crescer a ponto do polling em Postgres virar gargalo perceptível, revisar para Redis+Celery ou SQS.
+
+### Nota de gatilho futuro (escala) — sem decisão firme, registrado em 2026-07-14
+Discussão hipotética sobre um cenário de ~1 milhão de requisições levantou onde o desenho atual realmente quebraria primeiro. Registrado aqui para não perder o raciocínio, **sem que isso mude a decisão tomada acima** — continua valendo até haver evidência real de necessidade:
+
+- **Fila em Postgres (este ADR)**: é o ponto de ruptura mais provável — polling em massa vira contenção de lock e I/O no banco. Gatilho concreto de migração para SQS/Redis+Celery: latência perceptível entre um item entrar na fila e o worker pegá-lo, ou contenção de I/O visível no banco de metadados.
+- **`GET /images/{image_id}` (polling do cliente, ver `docs/api/contrato-endpoints.md`)**: em alto volume, cada consulta de status é uma leitura direta no Postgres principal. Antes de qualquer redesenho de endpoint, medidas paliativas: connection pooling e réplica de leitura para separar esse tráfego de leitura do tráfego de escrita da fila. Ver também a nota de considerações futuras no contrato de endpoints sobre substituir parte desse polling por push notification.
+- **Rate limiting por usuário/dispositivo**: só é possível de implementar corretamente depois que existir identidade real de chamador — depende da futura ADR 0007 (autenticação). Até lá, qualquer limite de taxa só poderia ser por IP, o que é fraco e não é considerado solução real.
+- A API FastAPI em si (camada stateless) e o upload de imagem via S3 (ADR 0006) não foram identificados como pontos de ruptura nesse volume — escalam horizontalmente sem redesenho.
