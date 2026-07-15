@@ -6,14 +6,17 @@ Este documento descreve o contrato de endpoints da API de backend, derivado das 
 - [ADR 0004](../adr/0004-armazenamento-de-imagens.md) — storage S3-compatível, metadados em Postgres
 - [ADR 0005](../adr/0005-stack-de-backend.md) — FastAPI, fila via tabela no Postgres
 - [ADR 0006](../adr/0006-estrategia-de-upload.md) — upload via pré-signed URL
+- [ADR 0007](../adr/0007-autenticacao.md) — autenticação via AWS Cognito (email + senha), identidade do chamador vem do JWT
 
 Este é um documento de especificação, não uma ADR — não registra trade-offs de decisão, só o formato concreto derivado das ADRs acima. Ainda não implementado em código.
 
-## `# REVISAR:` — autenticação/identidade
+## Autenticação
 
-Nenhuma ADR até agora decidiu como a API identifica o usuário/dispositivo que faz a requisição. Todos os endpoints abaixo assumem implicitamente uma identidade de chamador (para saber de quem é a imagem, e restringir listagem/exclusão ao dono), mas o mecanismo (token, API key, conta de usuário, etc.) **não está definido**. Por acordo explícito, essa decisão fica para o momento em que a implementação em código dos endpoints começar — vai virar a ADR 0007 antes da primeira linha de código.
+Todas as rotas abaixo exigem o header `Authorization: Bearer <JWT>`, com um token emitido pelo AWS Cognito ([ADR 0007](../adr/0007-autenticacao.md)). A API valida a assinatura e a expiração do token e extrai o identificador do usuário do claim `sub` — esse valor substitui o placeholder `owner_id` usado numa versão anterior deste documento, antes da ADR 0007 ser decidida.
 
-Até lá, os exemplos abaixo usam um campo genérico `owner_id` como placeholder, sem implicar qual vai ser o mecanismo real.
+**Erro comum a todas as rotas:** `401` — token ausente, inválido ou expirado.
+
+`# REVISAR:` (registrado na ADR 0007, não resolvido aqui) — o usuário autenticado é um técnico/agrônomo que atende várias propriedades. O modelo de associação entre usuário, propriedade e imagem (uma imagem pertence a uma propriedade, não só a quem tirou a foto) ainda não foi decidido; os exemplos abaixo tratam a imagem como pertencente diretamente ao usuário autenticado (`sub` do token) até essa decisão de modelo de dados existir.
 
 ## Ciclo de status de uma imagem
 
@@ -64,7 +67,7 @@ Cliente avisa que terminou o upload direto ao bucket. A API verifica a existênc
 ```
 
 **Erros:**
-- `404` — `image_id` não existe ou não pertence ao chamador.
+- `404` — `image_id` não existe ou não pertence ao usuário autenticado (`sub` do token).
 - `409` — objeto não encontrado no bucket (upload não aconteceu de fato).
 - `410` — URL pré-assinada expirou antes da confirmação.
 
@@ -100,11 +103,11 @@ Consulta assíncrona de status (ADR 0002). Enquanto `status != "done"`, o campo 
 ```
 
 **Erros:**
-- `404` — `image_id` não existe ou não pertence ao chamador.
+- `404` — `image_id` não existe ou não pertence ao usuário autenticado (`sub` do token).
 
 ### `GET /images` — listar imagens/detecções
 
-Histórico paginado do chamador.
+Histórico paginado do usuário autenticado.
 
 **Query params:** `status` (filtro opcional), `since`/`until` (filtro de data opcional), `page`, `page_size`.
 
@@ -127,7 +130,7 @@ Exclusão da imagem e seus metadados/detecções associadas — motivada pela ob
 **Response `204 No Content`**
 
 **Erros:**
-- `404` — `image_id` não existe ou não pertence ao chamador.
+- `404` — `image_id` não existe ou não pertence ao usuário autenticado (`sub` do token).
 
 ## Nota de gatilho futuro — push notification em vez de polling puro (sem decisão firme, registrado em 2026-07-14)
 
@@ -141,7 +144,8 @@ Isso **não é uma decisão tomada** — é uma nota de gatilho futuro, condicio
 
 ## Fora de escopo deste documento
 
-- Autenticação/identidade real (ver `# REVISAR:` acima — vira ADR 0007 antes da implementação).
+- Modelo de dados de associação usuário↔propriedade↔imagem (ver `# REVISAR:` na seção de Autenticação acima).
+- Detalhes de configuração do Cognito (política de senha, expiração/refresh de token) — ver ADR 0007.
 - Schema exato das tabelas no Postgres.
 - Consentimento/privacidade para uso de imagens em retrain (mencionado na ADR 0004, ainda não desenhado como fluxo de API).
 - Endpoints administrativos (ex.: gestão de versão de modelo, retrain).
