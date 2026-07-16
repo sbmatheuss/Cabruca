@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CABRUCA é um sistema de detecção de doenças e pragas em cacau (*Theobroma cacao*) a partir de imagens de campo (fotos tiradas por celular, geralmente por não especialistas, com iluminação/enquadramento variáveis e conectividade rural instável).
 
-O repositório está em estágio inicial: ainda não há código de aplicação (backend, app, treino de modelo). O que existe hoje são as decisões arquiteturais fundacionais em `docs/adr/`, que devem ser lidas antes de propor qualquer implementação, pois moldam o contrato de dados e de API desde a primeira linha de código:
+O repositório está em estágio inicial: existe um esqueleto do backend (`backend/`, ver seção Comandos), mas ainda nenhuma rota do contrato de API implementada, nenhum app mobile e nenhum treino de modelo. O que orienta qualquer implementação são as decisões arquiteturais em `docs/adr/`, que devem ser lidas antes de propor código novo, pois moldam o contrato de dados e de API desde a primeira linha:
 
 - [`docs/adr/0001-classificacao-vs-deteccao.md`](docs/adr/0001-classificacao-vs-deteccao.md) — o produto faz **detecção de objetos** (bounding boxes, localizar e contar lesões), não classificação de imagem inteira. Isso significa: dataset anotado em formato COCO/YOLO, API retorna lista de detecções (classe + caixa + confiança) por lesão, não uma classe única.
 - [`docs/adr/0002-inferencia-on-device-vs-nuvem.md`](docs/adr/0002-inferencia-on-device-vs-nuvem.md) — inferência é **cloud-first no MVP**, com fila local de upload assíncrono no app (captura offline, envia quando há rede). A API precisa suportar upload assíncrono com resultado consultado depois, não apenas request/response síncrono. Inferência on-device é fase 2, condicionada a modelo estável e evidência de necessidade real.
@@ -28,4 +28,11 @@ Este projeto é conduzido em modo colaborativo, não "faça tudo e entregue":
 
 ## Comandos
 
-Ainda não há build, lint, testes ou dependências configuradas neste repositório — nenhum framework ou linguagem foi escolhido para implementação ainda. Esta seção deve ser preenchida assim que a primeira stack (backend, treino de modelo, ou app) for decidida e commitada.
+Backend (`backend/`), decidido na ADR 0005: Python + FastAPI + SQLAlchemy 2.0 (async) + Alembic, gerenciado com Poetry, Postgres via Docker para desenvolvimento local.
+
+- Instalar dependências: `poetry install` (a partir de `backend/`)
+- Subir o Postgres de desenvolvimento: `docker compose up -d` (a partir de `backend/`)
+- Rodar as migrations: `poetry run alembic upgrade head`
+- Rodar a API localmente: `poetry run uvicorn app.main:app --reload`
+
+Ainda não há lint, testes automatizados ou CI configurados neste repositório. Esta seção deve ser expandida assim que esses forem definidos.

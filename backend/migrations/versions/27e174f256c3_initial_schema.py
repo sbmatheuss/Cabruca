@@ -25,8 +25,6 @@ image_status = postgresql.ENUM(
 
 def upgrade() -> None:
     """Upgrade schema."""
-    image_status.create(op.get_bind())
-
     op.create_table(
         "users",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
