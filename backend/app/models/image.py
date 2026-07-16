@@ -30,6 +30,9 @@ class Image(Base, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("users.id")
     )
     object_key: Mapped[str] = mapped_column(String(512))
+    # REVISAR: sem create_type=False, este ENUM tentará criar o tipo "image_status" se
+    # algum dia rodarmos Base.metadata.create_all() (ex.: setup de testes) — a migration
+    # já cria o tipo manualmente, então create_all() colidiria (DuplicateObject).
     status: Mapped[ImageStatus] = mapped_column(
         ENUM(ImageStatus, name="image_status"),
         default=ImageStatus.PENDING_UPLOAD,
