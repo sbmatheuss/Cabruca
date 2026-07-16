@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "cabruca-api"
+version = "0.1.0"
+description = "API de upload, fila e consulta de resultados de deteccao de doencas/pragas em cacau"
+authors = ["Matheus Braga"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115"
+uvicorn = { extras = ["standard"], version = "^0.32" }
+sqlalchemy = "^2.0"
+psycopg = { extras = ["binary"], version = "^3.2" }
+pydantic-settings = "^2.6"
+alembic = "^1.14"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
