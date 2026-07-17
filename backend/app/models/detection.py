@@ -7,9 +7,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
 
 
-# REVISAR: única tabela sem TimestampMixin (todas as outras têm created_at) —
-# confirmar se a ausência é intencional (timestamp já coberto por images.completed_at)
-# ou esquecimento.
+# Sem TimestampMixin: todas as detecções de uma imagem são gravadas juntas no
+# momento em que a inferência termina, timestamp já coberto por images.completed_at.
+# Reavaliar se reprocessamento (nova versão de modelo sobre imagem já processada)
+# virar requisito real — nesse caso isso deve virar uma ADR própria.
 class Detection(Base):
     __tablename__ = "detections"
 
