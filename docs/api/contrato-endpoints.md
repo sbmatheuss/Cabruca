@@ -222,6 +222,8 @@ Consulta assíncrona de status (ADR 0002). Enquanto `status != "done"`, o campo 
 }
 ```
 
+`bbox` vem normalizado 0-1 em relação às dimensões da imagem (convenção YOLO, [ADR 0009](../adr/0009-formato-bounding-box.md)), não em pixels absolutos. O cliente multiplica pela largura/altura da imagem que ele mesmo capturou para desenhar a caixa.
+
 **Erros:**
 - `404` — `image_id` não existe, ou o usuário não está associado à propriedade da imagem (ver "Autorização por propriedade" acima).
 

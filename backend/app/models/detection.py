@@ -21,9 +21,9 @@ class Detection(Base):
         UUID(as_uuid=True), ForeignKey("images.id", ondelete="CASCADE")
     )
     class_name: Mapped[str] = mapped_column(String(64))
-    # REVISAR: formato de bbox_x/y/width/height não está decidido em nenhuma ADR —
-    # pixels absolutos ou normalizado 0-1 (convenção YOLO)? Precisa estar alinhado
-    # entre pipeline de inferência e app mobile antes de gravar dados reais.
+    # Coordenadas normalizadas 0-1 (convenção YOLO), não pixels absolutos —
+    # ver ADR 0009. Pipeline de inferência é responsável por normalizar antes
+    # de persistir, independente da resolução em que a inferência rodou.
     bbox_x: Mapped[float]
     bbox_y: Mapped[float]
     bbox_width: Mapped[float]
