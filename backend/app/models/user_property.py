@@ -1,17 +1,16 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base
 
 
-# REVISAR: TimestampMixin gera a coluna `created_at`, mas a ADR 0008 e o contrato de
-# endpoints (docs/api/contrato-endpoints.md) já usam o nome `associated_at` para este
-# campo na resposta de "listar membros" — confirmar se é para renomear a coluna ou
-# mapear created_at -> associated_at na serialização.
-class UserProperty(Base, TimestampMixin):
+# Não usa TimestampMixin: aqui o timestamp é semanticamente "quando o técnico
+# se associou à propriedade" (ver ADR 0008 e docs/api/contrato-endpoints.md).
+class UserProperty(Base):
     __tablename__ = "user_properties"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -19,4 +18,7 @@ class UserProperty(Base, TimestampMixin):
     )
     property_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("properties.id"), primary_key=True
+    )
+    associated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
