@@ -7,10 +7,10 @@ from app.core.dev_auth import DEV_USER_ID
 from app.db.session import async_session
 
 
-# REVISAR: deveria extrair o header Authorization: Bearer <JWT>, validar a
-# assinatura/expiração contra o JWKS do Cognito (ADR 0007) e retornar o claim
-# `sub`. Por ora retorna sempre o usuário fixo de dev (app/core/dev_auth.py,
-# populado por scripts/seed_dev.py) até o User Pool do Cognito existir.
+# Stub deliberado até o Cognito existir (ver app/core/dev_auth.py e ADR 0007).
+# Quando o User Pool existir, isto passa a extrair o header
+# Authorization: Bearer <JWT>, validar assinatura/expiração contra o JWKS do
+# Cognito e retornar o claim `sub`.
 async def get_current_user_id() -> uuid.UUID:
     return DEV_USER_ID
 
