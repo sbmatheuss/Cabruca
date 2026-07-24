@@ -4,7 +4,7 @@ REVISAR: existe só enquanto get_current_user_id (app/api/deps.py) retorna um
 usuário fixo em vez de validar JWT do Cognito. Apagar este script quando a
 autenticação real for implementada.
 
-Uso: poetry run python scripts/seed_dev.py
+Uso: poetry run python -m scripts.seed_dev
 """
 
 import asyncio

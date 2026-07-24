@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import boto3
+from botocore.exceptions import ClientError
 
 from app.core.config import settings
 
@@ -28,3 +29,13 @@ def generate_upload_url(object_key: str, content_type: str) -> tuple[str, dateti
     )
     expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
     return url, expires_at
+
+
+def object_exists(object_key: str) -> bool:
+    try:
+        _s3_client.head_object(Bucket=settings.s3_bucket_name, Key=object_key)
+        return True
+    except ClientError as exc:
+        if exc.response["Error"]["Code"] == "404":
+            return False
+        raise
