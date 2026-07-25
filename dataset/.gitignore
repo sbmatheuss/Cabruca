@@ -1,0 +1,4 @@
+images/*
+annotations/*
+!images/.gitkeep
+!annotations/.gitkeep
