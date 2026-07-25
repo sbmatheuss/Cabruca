@@ -18,3 +18,16 @@ boto3 = "^1.43.52"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "ruff (>=0.16.0,<0.17.0)"
+]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+# B008 (Depends() em default de argumento) é o padrão idiomático do FastAPI,
+# não um bug — ignorado globalmente em vez de silenciado rota a rota.
+ignore = ["B008"]

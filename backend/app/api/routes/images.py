@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, field_validator
@@ -86,7 +86,7 @@ async def confirm_image(
     expires_at = image.created_at + timedelta(
         seconds=settings.s3_presigned_url_expiration_seconds
     )
-    if datetime.now(timezone.utc) > expires_at:
+    if datetime.now(UTC) > expires_at:
         raise HTTPException(status.HTTP_410_GONE, detail="URL pré-assinada expirou")
 
     if not object_exists(image.object_key):

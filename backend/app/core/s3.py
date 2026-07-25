@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import boto3
 from botocore.exceptions import ClientError
@@ -27,7 +27,7 @@ def generate_upload_url(object_key: str, content_type: str) -> tuple[str, dateti
         },
         ExpiresIn=expires_in,
     )
-    expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+    expires_at = datetime.now(UTC) + timedelta(seconds=expires_in)
     return url, expires_at
 
 

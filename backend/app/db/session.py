@@ -3,14 +3,13 @@ import sys
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.core.config import settings
-
 # Garante que todos os models sejam registrados no Base.metadata antes de
 # qualquer flush/commit — sem isso, o SQLAlchemy não conhece tabelas que
 # nenhum outro módulo importou diretamente (ex.: 'users'), e falha ao
 # resolver foreign keys. Mesmo motivo pelo qual migrations/env.py já
 # importa todos os models explicitamente para o autogenerate.
-import app.models  # noqa: E402, F401
+import app.models  # noqa: F401
+from app.core.config import settings
 
 # psycopg (modo async) não suporta o ProactorEventLoop, padrão do asyncio no
 # Windows — precisa do SelectorEventLoop. Sem isso, toda query real falha com
