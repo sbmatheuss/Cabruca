@@ -45,13 +45,21 @@ async def test_user_id() -> uuid.UUID:
 
 
 @pytest_asyncio.fixture
-async def seeded_property(db_session: AsyncSession, test_user_id: uuid.UUID) -> Property:
-    """User + Property associados, prontos para os testes de autorização."""
-    # Sem relationship() entre User e Property, o flush não sabe ordenar pela
-    # FK sozinho — insere o User primeiro, num flush à parte.
+async def test_user(db_session: AsyncSession, test_user_id: uuid.UUID) -> None:
+    # FK de user_properties/properties.created_by exige uma linha em `users`
+    # para o usuário autenticado — em produção isso viria do provisionamento
+    # via Cognito (ainda não implementado, ver ADR 0007); aqui garantimos a
+    # invariante manualmente, uma única vez por teste (fixture compartilhada
+    # entre `client` e `seeded_property`, para não inserir o mesmo id 2x).
     db_session.add(User(id=test_user_id))
     await db_session.flush()
 
+
+@pytest_asyncio.fixture
+async def seeded_property(
+    db_session: AsyncSession, test_user: None, test_user_id: uuid.UUID
+) -> Property:
+    """Property associada ao test_user, pronta para os testes de autorização."""
     property_ = Property(
         id=uuid.uuid4(),
         name="Fazenda de teste",
@@ -75,7 +83,7 @@ def s3_bucket():
 
 @pytest_asyncio.fixture
 async def client(
-    db_session: AsyncSession, test_user_id: uuid.UUID
+    db_session: AsyncSession, test_user_id: uuid.UUID, test_user: None
 ) -> AsyncIterator[AsyncClient]:
     async def _override_get_session() -> AsyncIterator[AsyncSession]:
         yield db_session

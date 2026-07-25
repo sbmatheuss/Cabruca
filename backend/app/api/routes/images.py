@@ -2,15 +2,23 @@ import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, field_validator
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.authz import ensure_property_access, get_accessible_image
 from app.api.deps import get_current_user_id, get_session
 from app.core.config import settings
-from app.core.s3 import build_object_key, generate_upload_url, object_exists
+from app.core.s3 import (
+    build_object_key,
+    delete_object,
+    generate_upload_url,
+    object_exists,
+)
+from app.models.detection import Detection
 from app.models.image import Image, ImageStatus
+from app.models.user_property import UserProperty
 
 router = APIRouter(prefix="/images", tags=["images"])
 
@@ -102,3 +110,118 @@ async def confirm_image(
     await session.commit()
 
     return ImageConfirmResponse(image_id=image.id, status=image.status.value)
+
+
+class ImageDetectionItem(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    class_name: str = Field(alias="class")
+    bbox: list[float]
+    confidence: float
+
+
+class ImageStatusResponse(BaseModel):
+    image_id: uuid.UUID
+    status: str
+    created_at: datetime
+    completed_at: datetime | None = None
+    model_version: str | None = None
+    detections: list[ImageDetectionItem] | None = None
+
+
+@router.get("/{image_id}", response_model=ImageStatusResponse, response_model_exclude_none=True)
+async def get_image(
+    image_id: uuid.UUID,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> ImageStatusResponse:
+    image = await get_accessible_image(session, image_id, user_id)
+
+    detections = None
+    if image.status == ImageStatus.DONE:
+        result = await session.execute(select(Detection).where(Detection.image_id == image.id))
+        detections = [
+            ImageDetectionItem(
+                class_name=d.class_name,
+                bbox=[d.bbox_x, d.bbox_y, d.bbox_width, d.bbox_height],
+                confidence=d.confidence,
+            )
+            for d in result.scalars().all()
+        ]
+
+    return ImageStatusResponse(
+        image_id=image.id,
+        status=image.status.value,
+        created_at=image.created_at,
+        completed_at=image.completed_at,
+        model_version=image.model_version,
+        detections=detections,
+    )
+
+
+class ImageListItem(BaseModel):
+    image_id: uuid.UUID
+    status: str
+    created_at: datetime
+
+
+class ImageListResponse(BaseModel):
+    items: list[ImageListItem]
+    page: int
+    page_size: int
+    total: int
+
+
+@router.get("", response_model=ImageListResponse)
+async def list_images(
+    status_filter: ImageStatus | None = Query(None, alias="status"),
+    since: datetime | None = None,
+    until: datetime | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> ImageListResponse:
+    base_query = (
+        select(Image)
+        .join(UserProperty, UserProperty.property_id == Image.property_id)
+        .where(UserProperty.user_id == user_id)
+    )
+    if status_filter is not None:
+        base_query = base_query.where(Image.status == status_filter)
+    if since is not None:
+        base_query = base_query.where(Image.created_at >= since)
+    if until is not None:
+        base_query = base_query.where(Image.created_at <= until)
+
+    total = await session.scalar(select(func.count()).select_from(base_query.subquery()))
+
+    result = await session.execute(
+        base_query.order_by(Image.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    items = [
+        ImageListItem(image_id=img.id, status=img.status.value, created_at=img.created_at)
+        for img in result.scalars().all()
+    ]
+
+    return ImageListResponse(items=items, page=page, page_size=page_size, total=total or 0)
+
+
+@router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_image(
+    image_id: uuid.UUID,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    image = await get_accessible_image(session, image_id, user_id)
+
+    # Apaga o objeto no S3 antes de apagar o registro no banco: se o commit
+    # falhar depois, sobra um registro órfão (ruim, mas não viola a LGPD); na
+    # ordem inversa, uma falha no S3 deixaria a imagem em si intacta mesmo com
+    # o registro já "excluído".
+    await asyncio.to_thread(delete_object, image.object_key)
+
+    await session.delete(image)
+    await session.commit()

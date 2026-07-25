@@ -46,3 +46,7 @@ def object_exists(object_key: str) -> bool:
         if exc.response["Error"]["Code"] == "404":
             return False
         raise
+
+
+def delete_object(object_key: str) -> None:
+    _s3_client().delete_object(Bucket=settings.s3_bucket_name, Key=object_key)
