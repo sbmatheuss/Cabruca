@@ -11,6 +11,24 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: cabruca
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U user -d cabruca"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgresql+psycopg://user:password@localhost:5432/cabruca
+      AWS_REGION: us-east-1
+      S3_BUCKET_NAME: cabruca-images-dev
     steps:
       - uses: actions/checkout@v4
 
@@ -27,5 +45,8 @@ jobs:
       - name: Lint (ruff)
         run: poetry run ruff check .
 
-      # REVISAR: passo de testes automatizados entra aqui quando existir
-      # suite pytest (ver checklist de progresso, área "Testes automatizados").
+      - name: Run migrations
+        run: poetry run alembic upgrade head
+
+      - name: Tests (pytest)
+        run: poetry run pytest

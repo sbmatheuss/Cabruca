@@ -21,7 +21,11 @@ build-backend = "poetry.core.masonry.api"
 
 [dependency-groups]
 dev = [
-    "ruff (>=0.16.0,<0.17.0)"
+    "ruff (>=0.16.0,<0.17.0)",
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-asyncio (>=1.4.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "moto[s3] (>=5.2.2,<6.0.0)"
 ]
 
 [tool.ruff]
@@ -31,3 +35,7 @@ target-version = "py312"
 # B008 (Depends() em default de argumento) é o padrão idiomático do FastAPI,
 # não um bug — ignorado globalmente em vez de silenciado rota a rota.
 ignore = ["B008"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]

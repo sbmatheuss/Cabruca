@@ -1,12 +1,19 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 
 import boto3
 from botocore.exceptions import ClientError
 
 from app.core.config import settings
 
-_s3_client = boto3.client("s3", region_name=settings.aws_region)
+
+@lru_cache
+def _s3_client():
+    # Criação preguiçosa (lazy): permite que testes ativem o mock do S3
+    # (moto) antes da primeira chamada real, em vez de na hora do import
+    # do módulo — quando nenhum mock ainda está de pé.
+    return boto3.client("s3", region_name=settings.aws_region)
 
 
 def build_object_key(property_id: uuid.UUID, image_id: uuid.UUID) -> str:
@@ -18,7 +25,7 @@ def build_object_key(property_id: uuid.UUID, image_id: uuid.UUID) -> str:
 
 def generate_upload_url(object_key: str, content_type: str) -> tuple[str, datetime]:
     expires_in = settings.s3_presigned_url_expiration_seconds
-    url = _s3_client.generate_presigned_url(
+    url = _s3_client().generate_presigned_url(
         ClientMethod="put_object",
         Params={
             "Bucket": settings.s3_bucket_name,
@@ -33,7 +40,7 @@ def generate_upload_url(object_key: str, content_type: str) -> tuple[str, dateti
 
 def object_exists(object_key: str) -> bool:
     try:
-        _s3_client.head_object(Bucket=settings.s3_bucket_name, Key=object_key)
+        _s3_client().head_object(Bucket=settings.s3_bucket_name, Key=object_key)
         return True
     except ClientError as exc:
         if exc.response["Error"]["Code"] == "404":
