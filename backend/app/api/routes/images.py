@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -89,7 +90,12 @@ async def confirm_image(
     if datetime.now(UTC) > expires_at:
         raise HTTPException(status.HTTP_410_GONE, detail="URL pré-assinada expirou")
 
-    if not object_exists(image.object_key):
+    # object_exists faz uma chamada de rede síncrona (boto3 não é async) — sem
+    # to_thread, ela bloquearia o event loop inteiro enquanto está em
+    # andamento, serializando todas as requisições concorrentes do processo.
+    # REVISAR: se mais chamadas de rede ao S3 forem adicionadas no futuro,
+    # reconsiderar migrar para aiobotocore em vez de espalhar to_thread.
+    if not await asyncio.to_thread(object_exists, image.object_key):
         raise HTTPException(status.HTTP_409_CONFLICT, detail="Upload não encontrado no bucket")
 
     image.status = ImageStatus.QUEUED
