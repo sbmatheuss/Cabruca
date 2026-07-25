@@ -8,11 +8,13 @@ O produto faz **detecção de objetos** (bounding boxes, localizar e contar les�
 
 Estágio inicial: esqueleto do backend funcionando (upload de imagem via S3 presigned URL), mas ainda sem dataset anotado, sem treino de modelo e sem app mobile.
 
-- **Backend**: FastAPI + SQLAlchemy 2.0 (async) + Alembic + Postgres. Duas rotas implementadas: `POST /images` (solicita upload) e `POST /images/{id}/confirm` (confirma upload). O restante do contrato (`docs/api/contrato-endpoints.md`) — CRUD de propriedades, consulta de resultado, listagem, exclusão — ainda não existe.
-- **Autenticação**: stub de desenvolvimento (usuário fixo) enquanto o AWS Cognito não é criado — ver [ADR 0007](docs/adr/0007-autenticacao.md) e `backend/app/core/dev_auth.py`.
+- **Backend**: FastAPI + SQLAlchemy 2.0 (async) + Alembic + Postgres. Contrato de endpoints (`docs/api/contrato-endpoints.md`) implementado por completo:
+  - Imagens: `POST /images`, `POST /images/{id}/confirm`, `GET /images/{id}` (status/detecções), `GET /images` (lista paginada, com filtros), `DELETE /images/{id}` (remove registro e objeto no S3).
+  - Propriedades: `POST /properties`, `POST /properties/join`, `GET /properties`, `GET /properties/{id}/members`, `POST /properties/{id}/transfer`, `DELETE /properties/{id}/members/{user_id}`.
+- **Autenticação**: stub de desenvolvimento (usuário fixo) enquanto o AWS Cognito não é criado — ver [ADR 0007](docs/adr/0007-autenticacao.md) e `backend/app/core/dev_auth.py`. Pendência conhecida: nada ainda provisiona a linha em `users` para um técnico novo autenticando pela primeira vez.
 - **Armazenamento de imagens**: S3 (AWS, dentro do free tier) via presigned URL — ver [ADR 0004](docs/adr/0004-armazenamento-de-imagens.md) e [ADR 0006](docs/adr/0006-estrategia-de-upload.md).
 - **Versionamento de dataset/modelo**: DVC inicializado, remote S3 configurado (bucket dedicado ainda por criar manualmente) — ver [ADR 0003](docs/adr/0003-versionamento-de-modelo.md) e [ADR 0010](docs/adr/0010-implementacao-dvc.md).
-- **Testes**: suíte pytest cobrindo as duas rotas existentes (`backend/tests/`), rodando contra Postgres real (com rollback por teste) e S3 simulado via `moto`.
+- **Testes**: suíte pytest cobrindo todas as rotas acima (`backend/tests/`), rodando contra Postgres real (com rollback por teste) e S3 simulado via `moto`.
 - **CI**: GitHub Actions (`.github/workflows/ci.yml`) roda lint (ruff), migrations e a suíte de testes a cada push/PR em `main`.
 - **Dataset, treino de modelo e app mobile**: ainda não iniciados.
 
