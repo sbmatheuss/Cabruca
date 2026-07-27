@@ -3,7 +3,23 @@
 Estrutura reservada para o dataset anotado de detecção de doenças/pragas em cacau. Ainda **vazia** — nenhuma imagem ou anotação real foi adicionada até o momento.
 
 - `images/` — fotos de campo (celular, iluminação/enquadramento variáveis).
-- `annotations/` — anotações de bounding box em formato COCO ou YOLO (decisão de detecção de objetos, não classificação — [ADR 0001](../docs/adr/0001-classificacao-vs-deteccao.md)).
+- `annotations/` — anotações de bounding box em **formato COCO** (decisão de detecção de objetos, não classificação — [ADR 0001](../docs/adr/0001-classificacao-vs-deteccao.md); escolha entre COCO e YOLO fechada na [ADR 0011](../docs/adr/0011-formato-anotacao-dataset.md)): um JSON (por split) com `images`, `annotations`, `categories`, bbox em pixels absolutos `[x, y, largura, altura]`.
+
+## Classes (MVP)
+
+Taxonomia fechada na [ADR 0011](../docs/adr/0011-formato-anotacao-dataset.md) — `categories` do schema COCO:
+
+| id | name |
+|---|---|
+| 0 | vassoura-de-bruxa |
+| 1 | podridao-parda |
+| 2 | moniliase |
+
+Mal-do-facão e pragas (tripes, ácaros, cochonilha, mosca-branca, monalônio, besouros) ficaram fora do MVP: sintoma sistêmico (mal-do-facão) ou alvo pequeno demais para bounding box confiável a partir de foto de celular.
+
+## Ferramenta de anotação
+
+[ADR 0012](../docs/adr/0012-ferramenta-anotacao-dataset.md) decidiu **CVAT self-hosted** (Docker Compose) para desenhar as bounding boxes. Ainda não instalado — só necessário quando houver fotos reais para rotular. Export do CVAT deve sair em COCO JSON e ser conferido contra a lista de `categories` acima antes de entrar em `annotations/`.
 
 ## Fluxo esperado (quando houver dados reais)
 
