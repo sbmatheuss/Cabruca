@@ -28,4 +28,5 @@ Instalação do CLI via **pipx** (`pipx install "dvc[s3]"`), sem criar projeto P
 - Quando um pipeline de treino real for criado, reavaliar se o DVC deve migrar para ser dependência declarada desse projeto (Poetry) em vez de instalação via pipx.
 
 ## # REVISAR:
-Confirmar a criação efetiva do bucket `cabruca-dvc-dev` na AWS antes de rodar `dvc push` pela primeira vez — enquanto isso, o remote configurado é um placeholder (ver comentário em `.dvc/config`).
+- Confirmar a criação efetiva do bucket `cabruca-dvc-dev` na AWS antes de rodar `dvc push` pela primeira vez — enquanto isso, o remote configurado é um placeholder (ver comentário em `.dvc/config`).
+- Região: consolidada para **sa-east-1** em 2026-07-28 (ver [ADR 0004](0004-armazenamento-de-imagens.md), atualização), para bater com o bucket de imagens e o User Pool do Cognito (ADR 0007). Como o bucket `cabruca-dvc-dev` nunca chegou a existir, basta criá-lo direto em sa-east-1 quando for a hora — não há recriação, só criação na região certa.

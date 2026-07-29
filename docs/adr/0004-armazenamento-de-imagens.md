@@ -31,5 +31,9 @@ Metadados (geolocalização, se autorizada pelo usuário; timestamp; resultado d
 - Cria dependência de monitorar uso do free tier da AWS para não haver cobrança surpresa nem interrupção de serviço na migração.
 - O bucket (AWS ou MinIO) alimenta tanto o versionamento via DVC (ADR 0003) quanto o pipeline de retrain do modelo.
 
+## Atualização 2026-07-28 — consolidação de região (sa-east-1)
+Ao provisionar o User Pool do Cognito (ADR 0007), o usuário criou o recurso em **sa-east-1** (São Paulo), por decisão deliberada de latência para o público técnico no Brasil. Isso ficou divergente do bucket de imagens `cabruca-images-dev`, criado em **us-east-1**. Decidido consolidar toda a infraestrutura AWS do projeto em **sa-east-1** — o bucket ainda estava vazio (nenhuma imagem real armazenada), então não há dado a migrar, só recriar o recurso na região certa.
+
 ## # REVISAR:
-Confirmar com o usuário, antes da migração de fato, se AWS S3 free tier ou infraestrutura própria (MinIO) deve ser o destino final — esta ADR documenta um plano, não uma decisão irreversível.
+- Confirmar com o usuário, antes da migração de fato, se AWS S3 free tier ou infraestrutura própria (MinIO) deve ser o destino final — esta ADR documenta um plano, não uma decisão irreversível.
+- **Bucket `cabruca-images-dev` ainda está em us-east-1** (situação em 2026-07-28) — precisa ser excluído e recriado em sa-east-1 antes de qualquer uso real. `backend/.env` continua apontando para a configuração antiga até essa ação ser confirmada.

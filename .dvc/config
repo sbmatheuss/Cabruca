@@ -4,7 +4,8 @@
 # REVISAR: bucket cabruca-dvc-dev ainda não existe na AWS (placeholder
 # combinado com o usuário em 2026-07-24; usuário vai criar manualmente).
 # Rodar `dvc push` só depois de criado; se o nome final divergir, ajustar
-# a url abaixo.
+# a url abaixo. Região atualizada para sa-east-1 em 2026-07-28 (ADR 0004),
+# pra bater com o bucket de imagens e o User Pool do Cognito (ADR 0007).
 ['remote "storage"']
     url = s3://cabruca-dvc-dev
-    region = us-east-1
+    region = sa-east-1
