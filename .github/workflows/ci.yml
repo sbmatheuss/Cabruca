@@ -27,8 +27,13 @@ jobs:
           --health-retries=5
     env:
       DATABASE_URL: postgresql+psycopg://user:password@localhost:5432/cabruca
-      AWS_REGION: us-east-1
+      AWS_REGION: sa-east-1
       S3_BUCKET_NAME: cabruca-images-dev
+      # Dummy: Settings() precisa achar algo no ambiente pra instanciar, mas
+      # os testes nunca chamam o Cognito real (get_current_user_id é
+      # sobrescrita em tests/conftest.py).
+      COGNITO_USER_POOL_ID: sa-east-1_test0000
+      COGNITO_APP_CLIENT_ID: test-client-id
     steps:
       - uses: actions/checkout@v4
 

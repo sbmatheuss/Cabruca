@@ -38,9 +38,8 @@ async def db_session() -> AsyncIterator[AsyncSession]:
 
 @pytest_asyncio.fixture
 async def test_user_id() -> uuid.UUID:
-    # UUID novo a cada teste — não reaproveita DEV_USER_ID (app/core/dev_auth.py)
-    # porque esse ID já existe na base de dev real (seed manual anterior) e
-    # colidiria com o insert abaixo.
+    # UUID novo a cada teste, pra não colidir com nenhum usuário já existente
+    # na base de dev real.
     return uuid.uuid4()
 
 

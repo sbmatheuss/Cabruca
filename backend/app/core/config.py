@@ -13,5 +13,10 @@ class Settings(BaseSettings):
     # com o usuário em 2026-07-21).
     s3_presigned_url_expiration_seconds: int = 900
 
+    # User Pool e App Client do Cognito (ADR 0007). Região é a mesma de
+    # aws_region — alinhadas de propósito com o bucket de imagens.
+    cognito_user_pool_id: str
+    cognito_app_client_id: str
+
 
 settings = Settings()
