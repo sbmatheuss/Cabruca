@@ -34,6 +34,14 @@ Metadados (geolocalização, se autorizada pelo usuário; timestamp; resultado d
 ## Atualização 2026-07-28 — consolidação de região (sa-east-1)
 Ao provisionar o User Pool do Cognito (ADR 0007), o usuário criou o recurso em **sa-east-1** (São Paulo), por decisão deliberada de latência para o público técnico no Brasil. Isso ficou divergente do bucket de imagens `cabruca-images-dev`, criado em **us-east-1**. Decidido consolidar toda a infraestrutura AWS do projeto em **sa-east-1** — o bucket ainda estava vazio (nenhuma imagem real armazenada), então não há dado a migrar, só recriar o recurso na região certa.
 
+## Atualização 2026-08-01 — bucket de imagens criado em sa-east-1
+Ao tentar excluir o bucket `cabruca-images-dev` em us-east-1 (conforme item pendente abaixo), a AWS retornou `NoSuchBucket` — como nomes de bucket S3 são únicos globalmente, isso confirma que o bucket **não existia de fato** (a nota de 2026-07-28 estava desatualizada; provavelmente nunca chegou a ser criado, ou foi apagado sem atualização do registro aqui).
+
+Criado do zero em **sa-east-1**, com o nome `cabruca-images-dev-4f9` (sufixo adicionado porque `cabruca-images-dev` já estava ocupado por outra conta AWS ao tentar criar). Bucket configurado com:
+- Bloqueio total de acesso público (`put-public-access-block`).
+- Criptografia padrão SSE-S3 (`put-bucket-encryption`).
+
+`backend/.env` e `backend/.env.example` atualizados com `S3_BUCKET_NAME=cabruca-images-dev-4f9`.
+
 ## # REVISAR:
 - Confirmar com o usuário, antes da migração de fato, se AWS S3 free tier ou infraestrutura própria (MinIO) deve ser o destino final — esta ADR documenta um plano, não uma decisão irreversível.
-- **Bucket `cabruca-images-dev` ainda está em us-east-1** (situação em 2026-07-28) — precisa ser excluído e recriado em sa-east-1 antes de qualquer uso real. `backend/.env` continua apontando para a configuração antiga até essa ação ser confirmada.
