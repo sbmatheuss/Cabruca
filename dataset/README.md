@@ -19,7 +19,22 @@ Mal-do-facão e pragas (tripes, ácaros, cochonilha, mosca-branca, monalônio, b
 
 ## Ferramenta de anotação
 
-[ADR 0012](../docs/adr/0012-ferramenta-anotacao-dataset.md) decidiu **CVAT self-hosted** (Docker Compose) para desenhar as bounding boxes. Ainda não instalado — só necessário quando houver fotos reais para rotular. Export do CVAT deve sair em COCO JSON e ser conferido contra a lista de `categories` acima antes de entrar em `annotations/`.
+[ADR 0012](../docs/adr/0012-ferramenta-anotacao-dataset.md) decidiu **CVAT self-hosted** (Docker Compose). Instalação **fora deste repositório** (decisão: documentar comandos fixados numa versão, não vendorizar a config do CVAT aqui — evita manter uma cópia de terceiro que fica desatualizada).
+
+Instalação (versão fixada, [instalação oficial](https://docs.cvat.ai/docs/administration/community/basics/installation/)):
+
+```bash
+git clone -b v2.72.0 https://github.com/cvat-ai/cvat
+cd cvat
+docker compose up -d
+docker exec -it cvat_server bash -ic 'python3 ~/manage.py createsuperuser'
+```
+
+Acesse http://localhost:8080, crie uma task apontando para as imagens de `dataset/images/`, desenhe as bounding boxes usando a taxonomia da ADR 0011, exporte em formato **COCO 1.0** e salve o JSON em `dataset/annotations/`. Export do CVAT deve ser conferido contra a lista de `categories` acima (rode `dataset/scripts/validate_dataset.py`) antes de entrar em `annotations/`.
+
+Pra encerrar: `docker compose down` (a partir da pasta onde o CVAT foi clonado).
+
+# REVISAR: versão fixada em v2.72.0 (mais recente em 2026-08-05) — atualizar aqui se o projeto decidir subir de versão depois.
 
 ## Fluxo esperado (quando houver dados reais)
 
@@ -30,7 +45,7 @@ O conteúdo desta pasta é versionado via **DVC**, não pelo Git (`dataset/.giti
 dvc add dataset/images dataset/annotations
 git add dataset/images.dvc dataset/annotations.dvc dataset/.gitignore
 git commit -m "..."
-dvc push   # requer o bucket cabruca-dvc-dev criado na AWS e credenciais configuradas
+dvc push   # requer credenciais AWS configuradas localmente com acesso ao bucket
 ```
 
-O remote do DVC (`s3://cabruca-dvc-dev`) ainda é um placeholder — o bucket não foi criado na AWS ainda (ver `# REVISAR:` em `.dvc/config` e ADR 0010).
+O remote do DVC (`s3://cabruca-dvc-dev-klm`, sa-east-1) já é um bucket real, criado em 2026-08-01 — não é mais um placeholder (ver ADR 0010 e `.dvc/config`).
