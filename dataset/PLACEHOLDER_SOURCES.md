@@ -21,5 +21,13 @@ coisa errada.
 | `podridao-parda_04.jpg` | podridao-parda | Wikimedia Commons (via Flickr) | Scot Nelson | CC0 1.0 | https://commons.wikimedia.org/wiki/File:Cacao_black_pod_rot_29064726523.jpg |
 | `moniliase_01.jpg` | moniliase | iNaturalist | unclecactus | CC0 | https://www.inaturalist.org/observations/58102409 |
 
-Nenhuma anotação COCO ainda existe para estas imagens — próximo passo é
-subir o CVAT (ADR 0012) e desenhar as bounding boxes.
+## Anotações
+
+`dataset/annotations/placeholder.json` contém 6 bounding boxes (uma por
+lesão/pod visível) cobrindo estas 5 imagens.
+
+# REVISAR: essas bboxes foram estimadas por inspeção visual do Claude
+(olhando a foto e chutando coordenadas), não desenhadas no CVAT nem
+revisadas por um anotador humano. Servem só para testar o pipeline
+completo (`validate_dataset.py`, DVC) — **não usar para treinar o modelo**
+sem antes redesenhar via CVAT (ADR 0012) e conferir cada caixa.
