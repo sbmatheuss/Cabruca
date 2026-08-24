@@ -2,3 +2,7 @@
 !.gitkeep
 !.gitignore
 !README.md
+# training/ e codigo-fonte (scripts de treino), nao peso de modelo -- versiona
+# normal via Git, ao contrario do resto de models/ (pesos, via DVC).
+!training/
+!training/**

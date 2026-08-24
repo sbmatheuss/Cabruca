@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "cabruca-models"
+version = "0.1.0"
+description = "Treino/avaliacao do modelo de deteccao de doencas/pragas em cacau (Detectron2, ADR 0013)"
+authors = ["Matheus Braga"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+# REVISAR: versao do torch precisa casar com o CUDA da maquina de treino real
+# (ainda nao decidida/provisionada) -- conferir compatibilidade antes de
+# instalar de fato, nao so confiar nesta constraint solta.
+torch = "^2.5"
+torchvision = "^0.20"
+# detectron2 nao publica wheel no PyPI -- instala a partir do repo oficial e
+# compila extensoes C++/CUDA contra o torch ja instalado. Nao da pra rodar
+# `poetry install` do zero sem antes conferir a compatibilidade CUDA/torch
+# (ver docs oficiais do Detectron2) -- avisar antes de instalar de fato.
+detectron2 = {git = "https://github.com/facebookresearch/detectron2.git"}
+pycocotools = "^2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py312"
