@@ -30,7 +30,7 @@ docker compose up -d
 docker exec -it cvat_server bash -ic 'python3 ~/manage.py createsuperuser'
 ```
 
-Acesse http://localhost:8080, crie uma task apontando para as imagens de `dataset/images/`, desenhe as bounding boxes usando a taxonomia da ADR 0011, exporte em formato **COCO 1.0** e salve o JSON em `dataset/annotations/`. Export do CVAT deve ser conferido contra a lista de `categories` acima (rode `dataset/scripts/validate_dataset.py`) antes de entrar em `annotations/`.
+Acesse http://localhost:8080, crie uma task apontando para as imagens de `dataset/images/`, desenhe as bounding boxes usando a taxonomia da ADR 0011, exporte em formato **COCO 1.0** e salve o JSON em `dataset/annotations/`. Divida o export em treino/validação com `dataset/scripts/split_dataset.py <export>.json` (gera `train.json`/`val.json`, os nomes que `models/training/config.py` espera) e então rode `dataset/scripts/validate_dataset.py` para conferir os dois arquivos contra a lista de `categories` acima antes de considerar o dataset pronto para treino.
 
 Pra encerrar: `docker compose down` (a partir da pasta onde o CVAT foi clonado).
 
