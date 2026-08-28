@@ -15,10 +15,12 @@ A [ADR 0011](0011-formato-anotacao-dataset.md) fechou o formato de anotação (C
 Adotar **CVAT self-hosted**, rodando via Docker Compose — decisão do usuário (2026-07-26).
 
 ## Consequências
-- Quando houver fotos reais para anotar, será necessário um Docker Compose próprio para subir o CVAT (serviço separado do `backend/docker-compose.yml`, que sobe apenas o Postgres de desenvolvimento do backend).
 - Exports do CVAT em COCO JSON devem ser conferidos contra o schema e a lista de `categories` definidos na ADR 0011 antes de entrar em `dataset/annotations/`.
-- Nenhuma imagem real existe ainda — esta ADR registra a escolha da ferramenta; a instalação/configuração de fato só é necessária quando houver fotos de campo prontas para rotular.
+- Nenhuma imagem real existe ainda — a infra de anotação (bloco abaixo) fica pronta antes dos dados, para não haver atrito quando as fotos de campo chegarem.
+
+## Decisão (infraestrutura de implantação, fechada em 2026-08-27)
+- **Onde roda**: máquina de desenvolvimento local, via Docker — não há demanda ou orçamento hoje para servidor dedicado. Reavaliar se/quando anotação precisar ser feita por mais de uma pessoa ao mesmo tempo.
+- **Onde fica o Docker Compose do CVAT**: em nenhum lugar deste repositório. A config do CVAT em si (`docker-compose.yml` do projeto CVAT) não é vendorizada aqui — mesma razão já registrada acima (evitar manter cópia de terceiro desatualizada). O que entra no repo é só um script fino de bootstrap em `infra/cvat/`, que automatiza os comandos já documentados em `dataset/README.md` (clone da tag fixada, `docker compose up`, instrução de `createsuperuser`) sem copiar a config do CVAT.
 
 ## # REVISAR:
-- Onde o CVAT vai rodar de fato (mesma máquina de desenvolvimento, servidor próprio, etc.) — decisão de infraestrutura de implantação ainda em aberto, fora do escopo desta ADR.
-- Local do Docker Compose do CVAT no repositório (ex. pasta própria fora de `backend/`, já que não é parte do serviço de API) — decidir quando a instalação for de fato feita.
+Nenhum ponto pendente — as duas decisões de infraestrutura acima foram fechadas com o usuário.
