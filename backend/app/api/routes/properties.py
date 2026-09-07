@@ -1,7 +1,7 @@
 import secrets
 import string
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -52,6 +52,7 @@ class PropertyCreateResponse(BaseModel):
     name: str
     property_code: str
     created_at: datetime
+    retrain_consent: bool
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=PropertyCreateResponse)
@@ -80,6 +81,7 @@ async def create_property(
         name=property_.name,
         property_code=property_.property_code,
         created_at=property_.created_at,
+        retrain_consent=property_.retrain_consent,
     )
 
 
@@ -120,6 +122,7 @@ class PropertyListItem(BaseModel):
     property_id: uuid.UUID
     name: str
     is_creator: bool
+    retrain_consent: bool
 
 
 class PropertyListResponse(BaseModel):
@@ -138,7 +141,12 @@ async def list_properties(
         .order_by(Property.created_at)
     )
     items = [
-        PropertyListItem(property_id=p.id, name=p.name, is_creator=p.created_by == user_id)
+        PropertyListItem(
+            property_id=p.id,
+            name=p.name,
+            is_creator=p.created_by == user_id,
+            retrain_consent=p.retrain_consent,
+        )
         for p in result.scalars().all()
     ]
     return PropertyListResponse(items=items)
@@ -216,6 +224,45 @@ async def transfer_property(
     await session.commit()
 
     return PropertyTransferResponse(property_id=property_.id, created_by=property_.created_by)
+
+
+class PropertyRetrainConsentRequest(BaseModel):
+    retrain_consent: bool
+
+
+class PropertyRetrainConsentResponse(BaseModel):
+    property_id: uuid.UUID
+    retrain_consent: bool
+
+
+@router.patch(
+    "/{property_id}/retrain-consent", response_model=PropertyRetrainConsentResponse
+)
+async def set_property_retrain_consent(
+    property_id: uuid.UUID,
+    body: PropertyRetrainConsentRequest,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> PropertyRetrainConsentResponse:
+    # ADR 0015: só o criador da propriedade consente/revoga; qualquer
+    # associado pode ler o valor (já exposto em POST/GET /properties).
+    property_ = await session.get(Property, property_id)
+    if property_ is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Propriedade não encontrada")
+
+    if property_.created_by != user_id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, detail="Usuário não é o criador desta propriedade"
+        )
+
+    property_.retrain_consent = body.retrain_consent
+    property_.retrain_consent_updated_at = datetime.now(UTC)
+    property_.retrain_consent_updated_by = user_id
+    await session.commit()
+
+    return PropertyRetrainConsentResponse(
+        property_id=property_.id, retrain_consent=property_.retrain_consent
+    )
 
 
 @router.delete("/{property_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

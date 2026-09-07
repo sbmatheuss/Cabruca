@@ -293,3 +293,64 @@ async def test_remove_member_non_creator_removing_third_party_returns_403(
     response = await client.delete(f"/properties/{property_.id}/members/{third_party_id}")
 
     assert response.status_code == 403
+
+
+async def test_create_property_retrain_consent_defaults_to_false(client: AsyncClient):
+    response = await client.post("/properties", json={"name": "Fazenda nova"})
+
+    assert response.status_code == 201
+    assert response.json()["retrain_consent"] is False
+
+
+async def test_set_retrain_consent_by_creator_succeeds(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    test_user_id: uuid.UUID,
+    seeded_property: Property,
+):
+    response = await client.patch(
+        f"/properties/{seeded_property.id}/retrain-consent",
+        json={"retrain_consent": True},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["property_id"] == str(seeded_property.id)
+    assert body["retrain_consent"] is True
+
+    await db_session.refresh(seeded_property)
+    assert seeded_property.retrain_consent is True
+    assert seeded_property.retrain_consent_updated_at is not None
+    assert seeded_property.retrain_consent_updated_by == test_user_id
+
+
+async def test_set_retrain_consent_by_non_creator_returns_403(
+    client: AsyncClient, db_session: AsyncSession, test_user_id: uuid.UUID
+):
+    other_owner_id = uuid.uuid4()
+    db_session.add(User(id=other_owner_id))
+    await db_session.flush()
+    property_ = Property(
+        id=uuid.uuid4(),
+        name="Fazenda de outro dono",
+        property_code=f"C{uuid.uuid4().hex[:7].upper()}",
+        created_by=other_owner_id,
+    )
+    db_session.add_all(
+        [property_, UserProperty(user_id=test_user_id, property_id=property_.id)]
+    )
+    await db_session.flush()
+
+    response = await client.patch(
+        f"/properties/{property_.id}/retrain-consent", json={"retrain_consent": True}
+    )
+
+    assert response.status_code == 403
+
+
+async def test_set_retrain_consent_nonexistent_property_returns_404(client: AsyncClient):
+    response = await client.patch(
+        f"/properties/{uuid.uuid4()}/retrain-consent", json={"retrain_consent": True}
+    )
+
+    assert response.status_code == 404

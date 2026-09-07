@@ -8,6 +8,7 @@ Este documento descreve o contrato de endpoints da API de backend, derivado das 
 - [ADR 0006](../adr/0006-estrategia-de-upload.md) — upload via pré-signed URL
 - [ADR 0007](../adr/0007-autenticacao.md) — autenticação via AWS Cognito (email + senha), identidade do chamador vem do JWT
 - [ADR 0008](../adr/0008-modelo-usuario-propriedade-imagem.md) — modelo usuário↔propriedade (N:N) ↔ imagem; acesso a propriedade existente via código
+- [ADR 0015](../adr/0015-consentimento-retrain.md) — consentimento para uso das imagens de uma propriedade em retrain do modelo (LGPD), por propriedade, só o criador altera
 
 Este é um documento de especificação, não uma ADR — não registra trade-offs de decisão, só o formato concreto derivado das ADRs acima. Ainda não implementado em código.
 
@@ -41,9 +42,12 @@ Cria a propriedade, associa automaticamente o usuário autenticado como criador,
   "property_id": "uuid",
   "name": "Fazenda Boa Esperança",
   "property_code": "AB12CD34",
-  "created_at": "2026-07-14T18:00:00Z"
+  "created_at": "2026-07-14T18:00:00Z",
+  "retrain_consent": false
 }
 ```
+
+`retrain_consent` sempre nasce `false` ([ADR 0015](../adr/0015-consentimento-retrain.md)) — nenhuma propriedade autoriza uso de suas imagens em retrain até o criador consentir explicitamente via `PATCH /properties/{property_id}/retrain-consent`.
 
 ### `POST /properties/join` — entrar em propriedade existente via código
 
@@ -75,12 +79,40 @@ Lista as propriedades às quais o usuário autenticado está associado.
 ```json
 {
   "items": [
-    { "property_id": "uuid", "name": "Fazenda Boa Esperança", "is_creator": true }
+    {
+      "property_id": "uuid",
+      "name": "Fazenda Boa Esperança",
+      "is_creator": true,
+      "retrain_consent": false
+    }
   ]
 }
 ```
 
 `is_creator` indica se o usuário autenticado é quem criou a propriedade — usado pelo cliente para decidir se mostra a opção de revogar acesso de outros técnicos.
+
+### `PATCH /properties/{property_id}/retrain-consent` — consentir/revogar uso em retrain
+
+Só o criador da propriedade pode alterar ([ADR 0015](../adr/0015-consentimento-retrain.md)). Sem enforcement automático hoje — não existe pipeline ligando imagens de produção ao treino; o campo fica registrado como metadado para quem exportar manualmente do CVAT respeitar.
+
+**Request body:**
+```json
+{
+  "retrain_consent": true
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "property_id": "uuid",
+  "retrain_consent": true
+}
+```
+
+**Erros:**
+- `403` — usuário autenticado não é o criador da propriedade.
+- `404` — propriedade não existe.
 
 ### `GET /properties/{property_id}/members` — listar técnicos associados
 
@@ -268,5 +300,4 @@ Isso **não é uma decisão tomada** — é uma nota de gatilho futuro, condicio
 
 - Detalhes de configuração do Cognito (política de senha, expiração/refresh de token) — ver ADR 0007.
 - Schema exato das tabelas no Postgres.
-- Consentimento/privacidade para uso de imagens em retrain (mencionado na ADR 0004, ainda não desenhado como fluxo de API).
 - Endpoints administrativos (ex.: gestão de versão de modelo, retrain).
