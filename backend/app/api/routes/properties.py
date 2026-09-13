@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.authz import ensure_property_membership
+from app.api.authz import ensure_property_membership, ensure_property_ownership
 from app.api.deps import get_current_user_id, get_session
 from app.models.property import Property
 from app.models.user_property import UserProperty
@@ -202,14 +202,7 @@ async def transfer_property(
     user_id: uuid.UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_session),
 ) -> PropertyTransferResponse:
-    property_ = await session.get(Property, property_id)
-    if property_ is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Propriedade não encontrada")
-
-    if property_.created_by != user_id:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN, detail="Usuário não é o criador desta propriedade"
-        )
+    property_ = await ensure_property_ownership(session, property_id, user_id)
 
     new_owner_membership = await session.get(
         UserProperty, (body.new_owner_user_id, property_id)
@@ -246,14 +239,9 @@ async def set_property_retrain_consent(
 ) -> PropertyRetrainConsentResponse:
     # ADR 0015: só o criador da propriedade consente/revoga; qualquer
     # associado pode ler o valor (já exposto em POST/GET /properties).
-    property_ = await session.get(Property, property_id)
-    if property_ is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Propriedade não encontrada")
-
-    if property_.created_by != user_id:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN, detail="Usuário não é o criador desta propriedade"
-        )
+    # ensure_property_ownership exige que o criador ainda seja membro atual —
+    # ver authz.py.
+    property_ = await ensure_property_ownership(session, property_id, user_id)
 
     property_.retrain_consent = body.retrain_consent
     property_.retrain_consent_updated_at = datetime.now(UTC)

@@ -93,7 +93,7 @@ Lista as propriedades às quais o usuário autenticado está associado.
 
 ### `PATCH /properties/{property_id}/retrain-consent` — consentir/revogar uso em retrain
 
-Só o criador da propriedade pode alterar ([ADR 0015](../adr/0015-consentimento-retrain.md)). Sem enforcement automático hoje — não existe pipeline ligando imagens de produção ao treino; o campo fica registrado como metadado para quem exportar manualmente do CVAT respeitar.
+Só o criador da propriedade pode alterar ([ADR 0015](../adr/0015-consentimento-retrain.md)), e apenas enquanto ele continuar associado a ela — um criador que saiu (`DELETE /properties/{property_id}/members/{user_id}`) perde esse privilégio até reingressar via `property_code`. Sem enforcement automático hoje — não existe pipeline ligando imagens de produção ao treino; o campo fica registrado como metadado para quem exportar manualmente do CVAT respeitar.
 
 **Request body:**
 ```json
@@ -111,8 +111,8 @@ Só o criador da propriedade pode alterar ([ADR 0015](../adr/0015-consentimento-
 ```
 
 **Erros:**
-- `403` — usuário autenticado não é o criador da propriedade.
-- `404` — propriedade não existe.
+- `403` — usuário autenticado está associado à propriedade, mas não é o criador.
+- `404` — propriedade não existe, ou usuário autenticado não está associado a ela (inclui o caso de já ter sido o criador e ter saído).
 
 ### `GET /properties/{property_id}/members` — listar técnicos associados
 
@@ -130,7 +130,7 @@ Necessário para o criador decidir quem revogar. Acessível a qualquer técnico 
 
 ### `POST /properties/{property_id}/transfer` — transferir posse da propriedade
 
-Só o criador atual pode chamar. Transfere `created_by` para outro técnico já associado à propriedade (ADR 0008) — necessário antes do criador sair, se houver outros membros.
+Só o criador atual pode chamar, e apenas enquanto ele continuar associado à propriedade (mesma regra de posse de `retrain-consent` acima). Transfere `created_by` para outro técnico já associado à propriedade (ADR 0008) — necessário antes do criador sair, se houver outros membros.
 
 **Request body:**
 ```json
@@ -148,8 +148,8 @@ Só o criador atual pode chamar. Transfere `created_by` para outro técnico já 
 ```
 
 **Erros:**
-- `403` — usuário autenticado não é o criador atual da propriedade.
-- `404` — propriedade não existe, ou `new_owner_user_id` não está associado a ela.
+- `403` — usuário autenticado está associado à propriedade, mas não é o criador atual.
+- `404` — propriedade não existe, usuário autenticado não está associado a ela, ou `new_owner_user_id` não está associado a ela.
 
 ### `DELETE /properties/{property_id}/members/{user_id}` — revogar acesso / sair da propriedade
 

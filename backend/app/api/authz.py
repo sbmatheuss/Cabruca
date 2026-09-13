@@ -64,3 +64,24 @@ async def ensure_property_membership(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Propriedade não encontrada")
 
     return property_
+
+
+async def ensure_property_ownership(
+    session: AsyncSession, property_id: uuid.UUID, user_id: uuid.UUID
+) -> Property:
+    """Garante que o usuário está associado à propriedade E é o criador.
+    Levanta 404 nos mesmos casos de ensure_property_membership (propriedade
+    não existe ou usuário não é membro atual) e 403 se é membro mas não é o
+    criador. Usada por endpoints de posse (retrain-consent, transfer) que
+    antes checavam só `created_by`: um criador que saiu da propriedade
+    (DELETE .../members/{user_id}) não deve manter esses privilégios só
+    porque o campo `created_by` não mudou — precisa ainda ser membro.
+    """
+    property_ = await ensure_property_membership(session, property_id, user_id)
+
+    if property_.created_by != user_id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, detail="Usuário não é o criador desta propriedade"
+        )
+
+    return property_
